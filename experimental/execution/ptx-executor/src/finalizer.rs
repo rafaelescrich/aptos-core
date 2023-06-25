@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{common::TxnIdx, state_view::OverlayedStateView};
-use aptos_logger::{trace};
+use aptos_logger::trace;
 use aptos_state_view::StateView;
 use aptos_types::{transaction::TransactionOutput, write_set::TransactionWrite};
 use aptos_vm_types::output::VMOutput;
