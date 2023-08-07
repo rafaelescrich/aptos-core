@@ -558,6 +558,7 @@ name = "aptos-block-partitioner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aptos-block-executor",
  "aptos-crypto",
  "aptos-logger",
  "aptos-metrics-core",
