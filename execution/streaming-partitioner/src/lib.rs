@@ -30,11 +30,11 @@ pub struct StreamingPartitioner<T: Transaction> {
 }
 
 impl<T> StreamingPartitioner<T>
-where
-    T: Transaction,
-    T::Key: Eq + Hash + Clone,
+    where
+        T: PTran,
+        T::Key: Eq + Hash + Clone,
 {
-    fn transactions_finished(&mut self, shard_id: ShardId, count: usize) {
+    pub fn transactions_finished(&mut self, shard_id: ShardId, count: usize) {
         let queue = &mut self.shard_queues[shard_id];
         for _ in 0..count {
             let tx_info = queue.pop_front().unwrap();
@@ -46,5 +46,7 @@ where
         }
     }
 
+    pub fn add_transactions(&mut self, transactions: Vec<T>) {
 
+    }
 }

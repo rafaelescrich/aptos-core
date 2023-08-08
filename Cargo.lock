@@ -558,7 +558,6 @@ name = "aptos-block-partitioner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "aptos-block-executor",
  "aptos-crypto",
  "aptos-logger",
  "aptos-metrics-core",
@@ -12746,6 +12745,17 @@ name = "str_stack"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9091b6114800a5f2141aee1d1b9d6ca3592ac062dc5decb3764ec5895a47b4eb"
+
+[[package]]
+name = "streaming-partitioner"
+version = "0.1.0"
+dependencies = [
+ "aptos-block-executor",
+ "aptos-block-partitioner",
+ "aptos-transaction-orderer",
+ "aptos-types",
+ "itertools",
+]
 
 [[package]]
 name = "string_cache"
