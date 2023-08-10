@@ -6,6 +6,15 @@ use crate::{
         nft_metadata_crawler_uris_query::NFTMetadataCrawlerURIsQuery,
     },
     utils::{
+        counters::{
+            GOT_CONNECTION_COUNT, PARSER_ERRORS_COUNT, PARSER_INVOCATIONS_COUNT,
+            PARSER_SUCCESSES_COUNT, SUCCESSFULLY_OPTIMIZED_ANIMATION_COUNT,
+            SUCCESSFULLY_OPTIMIZED_IMAGE_COUNT, SUCCESSFULLY_PARSED_JSON_COUNT,
+            SUCCESSFULLY_PARSED_URI_COUNT, SUCCESSFULLY_WRITTEN_TO_GCS_COUNT,
+            UNABLE_TO_GET_CONNECTION_COUNT, UNABLE_TO_OPTIMIZE_ANIMATION_COUNT,
+            UNABLE_TO_OPTIMIZE_IMAGE_COUNT, UNABLE_TO_PARSE_JSON_COUNT, UNABLE_TO_PARSE_URI_COUNT,
+            UNABLE_TO_WRITE_TO_GCS_COUNT,
+        },
         database::{
             check_or_update_chain_id, establish_connection_pool, run_migrations, upsert_uris,
         },
@@ -71,7 +80,20 @@ async fn consume_pubsub_entries_to_channel_loop(
         let entry_string = String::from_utf8(msg.message.clone().data)?;
         let parts: Vec<&str> = entry_string.split(',').collect();
 
-        let mut conn = pool.get()?;
+        let mut conn = match pool.get() {
+            Ok(conn) => {
+                GOT_CONNECTION_COUNT.inc();
+                conn
+            },
+            Err(e) => {
+                error!(
+                    error = ?e,
+                    "[NFT Metadata Crawler] Could not get DB connection from pool"
+                );
+                UNABLE_TO_GET_CONNECTION_COUNT.inc();
+                return Err(e.into());
+            },
+        };
         let grpc_chain_id = parts[4].parse::<u64>()?;
 
         if let Some(existing_id) = db_chain_id {
@@ -126,7 +148,11 @@ async fn spawn_parser(
 
         // Pulls worker from Channel
         let (mut worker, ack) = receiver.lock().await.recv()?;
-        worker.parse().await?;
+        PARSER_INVOCATIONS_COUNT.inc();
+        match worker.parse().await {
+            Ok(_) => PARSER_SUCCESSES_COUNT.inc(),
+            Err(_) => PARSER_ERRORS_COUNT.inc(),
+        }
 
         // Sends ack to PubSub only if running on release mode
         if release {
@@ -272,8 +298,17 @@ impl Worker {
             // Parse token_uri
             self.model.set_token_uri(self.token_uri.clone());
             let token_uri = self.model.get_token_uri();
-            let json_uri = URIParser::parse(self.config.ipfs_prefix.clone(), token_uri.clone())
-                .unwrap_or(token_uri);
+            let json_uri =
+                match URIParser::parse(self.config.ipfs_prefix.clone(), token_uri.clone()) {
+                    Ok(uri) => {
+                        SUCCESSFULLY_PARSED_URI_COUNT.inc();
+                        uri
+                    },
+                    Err(_) => {
+                        UNABLE_TO_PARSE_URI_COUNT.inc();
+                        token_uri
+                    },
+                };
 
             // Parse JSON for raw_image_uri and raw_animation_uri
             let (raw_image_uri, raw_animation_uri, json) =
@@ -287,6 +322,7 @@ impl Worker {
                             "[NFT Metadata Crawler] JSON parse failed",
                         );
                         self.model.increment_json_parser_retry_count();
+                        UNABLE_TO_PARSE_JSON_COUNT.inc();
                         (None, None, Value::Null)
                     });
 
@@ -295,12 +331,18 @@ impl Worker {
 
             // Save parsed JSON to GCS
             if json != Value::Null {
+                SUCCESSFULLY_PARSED_JSON_COUNT.inc();
                 let cdn_json_uri =
                     write_json_to_gcs(self.config.bucket.clone(), self.token_data_id.clone(), json)
                         .await
                         .map(|value| format!("{}{}", self.config.cdn_prefix, value))
                         .ok();
-                self.model.set_cdn_json_uri(cdn_json_uri);
+                self.model.set_cdn_json_uri(cdn_json_uri.clone());
+
+                match cdn_json_uri {
+                    Some(_) => SUCCESSFULLY_WRITTEN_TO_GCS_COUNT.inc(),
+                    None => UNABLE_TO_WRITE_TO_GCS_COUNT.inc(),
+                }
             }
 
             // Commit model to Postgres
@@ -326,8 +368,17 @@ impl Worker {
                 .model
                 .get_raw_image_uri()
                 .unwrap_or(self.model.get_token_uri());
-            let img_uri = URIParser::parse(self.config.ipfs_prefix.clone(), raw_image_uri)
-                .unwrap_or(self.model.get_token_uri());
+            let img_uri =
+                match URIParser::parse(self.config.ipfs_prefix.clone(), raw_image_uri.clone()) {
+                    Ok(uri) => {
+                        SUCCESSFULLY_PARSED_URI_COUNT.inc();
+                        uri
+                    },
+                    Err(_) => {
+                        UNABLE_TO_PARSE_URI_COUNT.inc();
+                        raw_image_uri
+                    },
+                };
 
             // Resize and optimize image and animation
             let (image, format) = ImageOptimizer::optimize(
@@ -344,11 +395,13 @@ impl Worker {
                     "[NFT Metadata Crawler] Image optimization failed"
                 );
                 self.model.increment_image_optimizer_retry_count();
+                UNABLE_TO_OPTIMIZE_IMAGE_COUNT.inc();
                 (vec![], ImageFormat::Png)
             });
 
+            // Save resized and optimized image to GCS
             if !image.is_empty() {
-                // Save resized and optimized image to GCS
+                SUCCESSFULLY_OPTIMIZED_IMAGE_COUNT.inc();
                 let cdn_image_uri = write_image_to_gcs(
                     format,
                     self.config.bucket.clone(),
@@ -358,7 +411,12 @@ impl Worker {
                 .await
                 .map(|value| format!("{}{}", self.config.cdn_prefix, value))
                 .ok();
-                self.model.set_cdn_image_uri(cdn_image_uri);
+                self.model.set_cdn_image_uri(cdn_image_uri.clone());
+
+                match cdn_image_uri {
+                    Some(_) => SUCCESSFULLY_WRITTEN_TO_GCS_COUNT.inc(),
+                    None => UNABLE_TO_WRITE_TO_GCS_COUNT.inc(),
+                }
             }
 
             // Commit model to Postgres
@@ -386,9 +444,19 @@ impl Worker {
 
         // If raw_animation_uri_option is None, skip
         if let Some(raw_animation_uri) = raw_animation_uri_option {
-            let animation_uri =
-                URIParser::parse(self.config.ipfs_prefix.clone(), raw_animation_uri.clone())
-                    .unwrap_or(raw_animation_uri);
+            let animation_uri = match URIParser::parse(
+                self.config.ipfs_prefix.clone(),
+                raw_animation_uri.clone(),
+            ) {
+                Ok(uri) => {
+                    SUCCESSFULLY_PARSED_URI_COUNT.inc();
+                    uri
+                },
+                Err(_) => {
+                    UNABLE_TO_PARSE_URI_COUNT.inc();
+                    raw_animation_uri
+                },
+            };
 
             // Resize and optimize animation
             let (animation, format) = ImageOptimizer::optimize(
@@ -405,11 +473,13 @@ impl Worker {
                     "[NFT Metadata Crawler] Animation optimization failed"
                 );
                 self.model.increment_animation_optimizer_retry_count();
+                UNABLE_TO_OPTIMIZE_ANIMATION_COUNT.inc();
                 (vec![], ImageFormat::Png)
             });
 
             // Save resized and optimized animation to GCS
             if !animation.is_empty() {
+                SUCCESSFULLY_OPTIMIZED_ANIMATION_COUNT.inc();
                 let cdn_animation_uri = write_image_to_gcs(
                     format,
                     self.config.bucket.clone(),
@@ -419,7 +489,12 @@ impl Worker {
                 .await
                 .map(|value| format!("{}{}", self.config.cdn_prefix, value))
                 .ok();
-                self.model.set_cdn_animation_uri(cdn_animation_uri);
+                self.model.set_cdn_animation_uri(cdn_animation_uri.clone());
+
+                match cdn_animation_uri {
+                    Some(_) => SUCCESSFULLY_WRITTEN_TO_GCS_COUNT.inc(),
+                    None => UNABLE_TO_WRITE_TO_GCS_COUNT.inc(),
+                }
             }
 
             // Commit model to Postgres

@@ -1,7 +1,14 @@
 // Copyright © Aptos Foundation
 
 use crate::{
-    schema::nft_metadata_crawler::parsed_token_uris, utils::constants::MAX_RETRY_TIME_SECONDS,
+    schema::nft_metadata_crawler::parsed_token_uris,
+    utils::{
+        constants::MAX_RETRY_TIME_SECONDS,
+        counters::{
+            DUPLICATE_RAW_ANIMATION_URI_COUNT, DUPLICATE_RAW_IMAGE_URI_COUNT,
+            DUPLICATE_TOKEN_URI_COUNT,
+        },
+    },
 };
 use backoff::{retry, ExponentialBackoff};
 use diesel::{
@@ -49,6 +56,7 @@ impl NFTMetadataCrawlerURIsQuery {
         match retry(backoff, &mut op) {
             Ok(result) => {
                 warn!(token_uri = token_uri, "token_uri has been found");
+                DUPLICATE_TOKEN_URI_COUNT.inc();
                 Ok(result)
             },
             Err(_) => Ok(op()?),
@@ -78,6 +86,7 @@ impl NFTMetadataCrawlerURIsQuery {
                     raw_image_uri = raw_image_uri,
                     "raw_image_uri has been found"
                 );
+                DUPLICATE_RAW_IMAGE_URI_COUNT.inc();
                 Ok(result)
             },
             Err(_) => Ok(op()?),
@@ -107,6 +116,7 @@ impl NFTMetadataCrawlerURIsQuery {
                     raw_animation_uri = raw_animation_uri,
                     "raw_animation_uri has been found"
                 );
+                DUPLICATE_RAW_ANIMATION_URI_COUNT.inc();
                 Ok(result)
             },
             Err(_) => Ok(op()?),

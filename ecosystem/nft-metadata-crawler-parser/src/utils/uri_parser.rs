@@ -1,5 +1,6 @@
 // Copyright © Aptos Foundation
 
+use crate::utils::counters::PARSE_URI_INVOCATION_COUNT;
 use regex::Regex;
 use url::Url;
 
@@ -9,6 +10,8 @@ impl URIParser {
     /// Attempts to parse IPFS URI to use dedicated gateway.
     /// Returns the original URI if parsing fails.
     pub fn parse(ipfs_prefix: String, uri: String) -> anyhow::Result<String> {
+        PARSE_URI_INVOCATION_COUNT.inc();
+
         let modified_uri = if uri.starts_with("ipfs://") {
             uri.replace("ipfs://", "https://ipfs.com/ipfs/")
         } else {

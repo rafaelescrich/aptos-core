@@ -1,6 +1,9 @@
 // Copyright © Aptos Foundation
 
-use crate::{get_uri_metadata, utils::constants::MAX_RETRY_TIME_SECONDS};
+use crate::{
+    get_uri_metadata, utils::constants::MAX_RETRY_TIME_SECONDS,
+    utils::counters::OPTIMIZE_IMAGE_INVOCATION_COUNT,
+};
 use anyhow::Context;
 use backoff::{future::retry, ExponentialBackoff};
 use futures::FutureExt;
@@ -22,6 +25,8 @@ impl ImageOptimizer {
         max_file_size_bytes: u32,
         image_quality: u8,
     ) -> anyhow::Result<(Vec<u8>, ImageFormat)> {
+        OPTIMIZE_IMAGE_INVOCATION_COUNT.inc();
+
         let (_, size) = get_uri_metadata(uri.clone()).await?;
         if size > max_file_size_bytes {
             let error_msg = format!(

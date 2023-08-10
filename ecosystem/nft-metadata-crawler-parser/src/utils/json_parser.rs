@@ -1,6 +1,12 @@
 // Copyright © Aptos Foundation
 
-use crate::{get_uri_metadata, utils::constants::MAX_RETRY_TIME_SECONDS};
+use crate::{
+    get_uri_metadata,
+    utils::{
+        constants::MAX_RETRY_TIME_SECONDS,
+        counters::{PARSE_JSON_FILE_FOUND_IMAGE_INSTEAD, PARSE_JSON_FILE_TOO_LARGE_COUNT},
+    },
+};
 use anyhow::Context;
 use backoff::{future::retry, ExponentialBackoff};
 use futures::FutureExt;
@@ -9,6 +15,8 @@ use reqwest::Client;
 use serde_json::Value;
 use std::time::Duration;
 use tracing::{error, info};
+
+use super::counters::PARSE_JSON_INVOCATION_COUNT;
 
 pub struct JSONParser;
 
@@ -19,10 +27,13 @@ impl JSONParser {
         uri: String,
         max_file_size_bytes: u32,
     ) -> anyhow::Result<(Option<String>, Option<String>, Value)> {
+        PARSE_JSON_INVOCATION_COUNT.inc();
+
         let (mime, size) = get_uri_metadata(uri.clone()).await?;
         if ImageFormat::from_mime_type(mime.clone()).is_some() {
             let error_msg = format!("JSON parser received image file: {}, skipping", mime);
             error!(uri = uri, "[NFT Metadata Crawler] {}", error_msg);
+            PARSE_JSON_FILE_FOUND_IMAGE_INSTEAD.inc();
             return Err(anyhow::anyhow!(error_msg));
         } else if size > max_file_size_bytes {
             let error_msg = format!(
@@ -30,6 +41,7 @@ impl JSONParser {
                 size
             );
             error!(uri = uri, "[NFT Metadata Crawler] {}", error_msg);
+            PARSE_JSON_FILE_TOO_LARGE_COUNT.inc();
             return Err(anyhow::anyhow!(error_msg));
         }
 
