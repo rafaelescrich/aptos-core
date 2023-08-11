@@ -7,4 +7,3 @@ pub mod common;
 pub mod const_option;
 mod reservation_table;
 pub mod transaction_compressor;
-pub mod streaming_partitioner;

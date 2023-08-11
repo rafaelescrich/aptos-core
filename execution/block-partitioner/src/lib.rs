@@ -6,7 +6,6 @@ use crate::sharded_block_partitioner::ShardedBlockPartitioner;
 use aptos_types::block_executor::partitioner::RoundId;
 
 pub mod sharded_block_partitioner;
-pub mod streaming_block_partitioner;
 pub mod test_utils;
 
 pub struct BlockPartitionerConfig {

@@ -82,6 +82,7 @@ struct TxnInfo<T> {
 
 #[derive(Default)]
 struct RecentWriteInfo {
+    /// Number of rece
     count: usize,
     dependencies: HashSet<TxnIndex>,
 }

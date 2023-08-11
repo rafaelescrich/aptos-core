@@ -1,5 +1,5 @@
 [package]
-name = "streaming-partitioner"
+name = "aptos-streaming-partitioner"
 version = "0.1.0"
 authors.workspace = true
 edition.workspace = true
@@ -17,3 +17,6 @@ aptos-block-partitioner = { workspace = true }
 aptos-transaction-orderer = { workspace = true }
 aptos-types = { workspace = true }
 itertools = { workspace = true }
+nonmax = { workspace = true }
+rand = { workspace = true }
+smallvec = { workspace = true }
