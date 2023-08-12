@@ -1712,6 +1712,16 @@ name = "aptos-global-constants"
 version = "0.1.0"
 
 [[package]]
+name = "aptos-graphs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "metis",
+ "rand 0.7.3",
+]
+
+[[package]]
 name = "aptos-id-generator"
 version = "0.1.0"
 
@@ -3363,7 +3373,6 @@ dependencies = [
  "aptos-transaction-orderer",
  "aptos-types",
  "itertools",
- "metis",
  "nonmax",
  "rand 0.7.3",
  "smallvec",
