@@ -55,5 +55,6 @@ pub mod aggregate_signature;
 pub mod batched_stream;
 pub mod block_executor;
 pub mod state_store;
+pub mod with;
 #[cfg(test)]
 mod unit_tests;
