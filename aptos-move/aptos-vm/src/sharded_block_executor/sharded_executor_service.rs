@@ -12,6 +12,7 @@ use crate::{
     },
 };
 use aptos_logger::{info, trace};
+use aptos_runtimes::thread_manager::THREAD_MANAGER;
 use aptos_state_view::StateView;
 use aptos_types::{
     block_executor::partitioner::{
@@ -104,17 +105,18 @@ impl<S: StateView + Sync + Send + 'static> ShardedExecutorService<S> {
 
         let cross_shard_state_view_clone = cross_shard_state_view.clone();
         let cross_shard_client_clone = cross_shard_client.clone();
-        executor_thread_pool.clone().scope(|s| {
-            s.spawn(move |_| {
+        let runtime = THREAD_MANAGER.get_vm_execution_runtime();
+        tokio_scoped::scoped(&runtime).scope(|s| {
+            s.spawn(async move {
                 CrossShardCommitReceiver::start(
                     cross_shard_state_view_clone,
                     cross_shard_client,
                     round,
                 );
             });
-            s.spawn(move |_| {
+            s.spawn(async move {
                 let ret = BlockAptosVM::execute_block(
-                    executor_thread_pool,
+                    executor_thread_pool.clone(),
                     transactions
                         .into_iter()
                         .map(|txn| txn.into_txn().into_txn())

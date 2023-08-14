@@ -1,10 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#![forbid(unsafe_code)]
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::runtime::{Builder, Runtime};
+
+pub mod thread_manager;
 
 /// The max thread name length before the name will be truncated
 /// when it's displayed. Note: the max display length is 15, but
@@ -13,7 +13,14 @@ const MAX_THREAD_NAME_LENGTH: usize = 12;
 
 /// Returns a tokio runtime with named threads.
 /// This is useful for tracking threads when debugging.
-pub fn spawn_named_runtime(thread_name: String, num_worker_threads: Option<usize>) -> Runtime {
+pub fn spawn_named_runtime<F>(
+    thread_name: String,
+    num_worker_threads: Option<usize>,
+    on_thread_start: F,
+) -> Runtime
+where
+    F: Fn() + Send + Sync + 'static,
+{
     // Verify the given name has an appropriate length
     if thread_name.len() > MAX_THREAD_NAME_LENGTH {
         panic!(
@@ -31,6 +38,7 @@ pub fn spawn_named_runtime(thread_name: String, num_worker_threads: Option<usize
             let id = atomic_id.fetch_add(1, Ordering::SeqCst);
             format!("{}-{}", thread_name_clone, id)
         })
+        .on_thread_start(on_thread_start)
         .disable_lifo_slot()
         .enable_all();
     if let Some(num_worker_threads) = num_worker_threads {

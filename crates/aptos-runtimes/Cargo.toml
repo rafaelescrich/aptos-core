@@ -13,4 +13,7 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+core_affinity = { workspace = true }
+libc = { workspace = true }
+once_cell = { workspace = true }
 tokio = { workspace = true }
