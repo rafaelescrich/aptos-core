@@ -144,6 +144,10 @@ impl FakeExecutor {
         self
     }
 
+    pub fn disable_parallel_execution(&mut self) {
+        self.no_parallel_exec = true;
+    }
+
     /// Creates an executor from the genesis file GENESIS_FILE_LOCATION
     pub fn from_head_genesis() -> Self {
         Self::from_genesis(GENESIS_CHANGE_SET_HEAD.clone().write_set(), ChainId::test())
