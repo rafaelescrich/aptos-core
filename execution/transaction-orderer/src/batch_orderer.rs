@@ -6,7 +6,7 @@ use std::hash::Hash;
 use aptos_types::block_executor::partitioner::TxnIndex;
 
 use crate::common::{Direction, PTransaction};
-use crate::const_option::{ConstNone, ConstOption, ConstSome};
+use aptos_types::const_option::{ConstNone, ConstOption, ConstSome};
 use crate::reservation_table::{HashMapReservationTable, ReservationTable};
 
 /// Creates batches of non-conflicting transactions.
