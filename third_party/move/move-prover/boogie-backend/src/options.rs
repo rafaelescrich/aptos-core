@@ -184,7 +184,7 @@ impl Default for BoogieOptions {
             eager_threshold: 100,
             lazy_threshold: 100,
             stable_test_output: false,
-            num_instances: 1,
+            num_instances: 2,
             sequential_task: false,
             hard_timeout_secs: 0,
             vector_theory: VectorTheory::BoogieArray,
