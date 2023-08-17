@@ -1,3 +1,5 @@
+// Copyright © Aptos Foundation
+
 use aptos_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
 };
@@ -33,6 +35,138 @@ pub(crate) fn get_handle(table_data: &StructRef) -> PartialVMResult<TableHandle>
 }
 
 /***************************************************************************************************
+* public native fun native fun create_impl2(nonce: Table, balance: Table, code: Table, storage: Table, pub_keys: Table, caller: vec<u8>, payload: vector<u8>, signature: vector<u8>);
+***************************************************************************************************/
+
+fn native_create_impl2(
+    context: &mut SafeNativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert_eq!(args.len(), 9);
+    context.charge(EVM_CREATE_BASE)?;
+    let gas_limit = safely_pop_arg!(args, u64);
+    let init_code = safely_pop_arg!(args, Vec<u8>);
+    let value = safely_pop_arg!(args, Vec<u8>);
+    let caller = safely_pop_arg!(args, Vec<u8>);
+    let caller = vec_to_h160(&caller);
+    let value = U256::from_big_endian(&value);
+
+    let pub_keys_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let storage_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let code_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let balance_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let nonce_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let evm_context = context.extensions().get::<NativeEvmContext>();
+
+    let mut engine = Engine::new(
+        table_context.resolver,
+        nonce_table_handle,
+        balance_table_handle,
+        code_table_handle,
+        storage_table_handle,
+        EthAddress::new(caller)
+    );
+    let (exit_reason, output, mut change_set) = engine.transact_create(caller, value, init_code, gas_limit, [].to_vec());
+    evm_context.table_change_set.borrow_mut().new_tables.append(&mut change_set.new_tables);
+    evm_context.table_change_set.borrow_mut().removed_tables.append(&mut change_set.removed_tables);
+    evm_context.table_change_set.borrow_mut().changes.append(&mut change_set.changes);
+    match exit_reason {
+        ExitReason::Succeed(_) => {
+            Ok(smallvec![Value::vector_u8(output)])
+        },
+        ExitReason::Error(_) => {
+            Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("EVM returned an error".to_string())
+                .with_sub_status(0x03_0002)
+                .into())
+        },
+        ExitReason::Revert(_) => {
+            Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("EVM reverted".to_string())
+                .with_sub_status(0x03_0002)
+                .into())
+        },
+        ExitReason::Fatal(_) => {
+            Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("EVM returned fatal".to_string())
+                .with_sub_status(0x03_0003)
+                .into())
+        }
+    }
+    //println!("exit_reason: {:?}, output: {:?}, table change set: {:?}", exit_reason, output, change_set);
+    //Ok(smallvec![Value::vector_u8([].to_vec())])
+}
+
+fn native_call_impl2(
+    context: &mut SafeNativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert_eq!(args.len(), 10);
+    context.charge(EVM_CREATE_BASE)?;
+    let gas_limit = safely_pop_arg!(args, u64);
+    let data = safely_pop_arg!(args, Vec<u8>);
+    let value = safely_pop_arg!(args, Vec<u8>);
+    let address = safely_pop_arg!(args, Vec<u8>);
+    let caller = safely_pop_arg!(args, Vec<u8>);
+    println!("before caller in call impl2:{:?}", caller);
+    let caller = vec_to_h160(&caller);
+    println!("after caller in call impl2:{:?}", caller);
+    let value = U256::from_big_endian(&value);
+    let address = vec_to_h160(&address);
+
+    let pub_keys_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let storage_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let code_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let balance_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let nonce_table_handle = get_handle(&safely_pop_arg!(args, StructRef))?;
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let evm_context = context.extensions().get::<NativeEvmContext>();
+    let mut engine = Engine::new(
+        table_context.resolver,
+        nonce_table_handle,
+        balance_table_handle,
+        code_table_handle,
+        storage_table_handle,
+        EthAddress::new(caller)
+    );
+    let (exit_reason, output, mut change_set) = engine.transact_call(caller, address, value, data, gas_limit, [].to_vec());
+    evm_context.table_change_set.borrow_mut().new_tables.append(&mut change_set.new_tables);
+    evm_context.table_change_set.borrow_mut().removed_tables.append(&mut change_set.removed_tables);
+    evm_context.table_change_set.borrow_mut().changes.append(&mut change_set.changes);
+    println!("EVM Change set in native {:?}", change_set);
+    match exit_reason {
+        ExitReason::Succeed(_) => {
+            Ok(smallvec![Value::vector_u8(output)])
+        },
+        ExitReason::Error(_) => {
+            Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("EVM returned an error".to_string())
+                .with_sub_status(0x03_0002)
+                .into())
+        },
+        ExitReason::Revert(_) => {
+            Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("EVM reverted".to_string())
+                .with_sub_status(0x03_0002)
+                .into())
+        },
+        ExitReason::Fatal(_) => {
+            Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("EVM returned fatal".to_string())
+                .with_sub_status(0x03_0003)
+                .into())
+        }
+    }
+    //println!("exit_reason: {:?}, output: {:?}, table change set: {:?}", exit_reason, output, change_set);
+    //Ok(smallvec![Value::vector_u8([].to_vec())])
+}
+
+
+
+/***************************************************************************************************
 * public native fun native fun create_impl(nonce: Table, balance: Table, code: Table, storage: Table, pub_keys: Table, caller: vec<u8>, payload: vector<u8>, signature: vector<u8>);
 ***************************************************************************************************/
 
@@ -43,7 +177,7 @@ fn native_create_impl(
 ) -> SafeNativeResult<SmallVec<[Value; 1]>> {
     debug_assert_eq!(args.len(), 4);
     context.charge(EVM_CREATE_BASE)?;
-    
+
     let signature = safely_pop_arg!(args, Vec<u8>);
     let payload = safely_pop_arg!(args, Vec<u8>);
     let caller = safely_pop_arg!(args, Vec<u8>);
@@ -233,14 +367,13 @@ fn native_view_impl(
 
 /***************************************************************************************************
  * module
- *
  **************************************************************************************************/
  pub fn make_all(
     builder: &SafeNativeBuilder,
 ) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
     let natives = [
-        ("create_impl", native_create_impl as RawSafeNative),
-        ("call_impl", native_call_impl),
+        ("create_impl2", native_create_impl2 as RawSafeNative),
+        ("call_impl2", native_call_impl2),
         ("view_impl", native_view_impl)
     ];
     builder.make_named_natives(natives)

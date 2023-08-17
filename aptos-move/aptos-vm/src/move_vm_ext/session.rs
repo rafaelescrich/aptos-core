@@ -159,7 +159,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
 
         let evm_context: NativeEvmContext = extensions.remove();
         let evm_change_set = evm_context.into_change_set();
-
+        println!("EVM Change set in session.finish {:?}", evm_change_set);
         let table_context: NativeTableContext = extensions.remove();
         let mut table_change_set = table_context
             .into_change_set()
@@ -168,6 +168,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         table_change_set.new_tables.extend(evm_change_set.new_tables);
         table_change_set.removed_tables.extend(evm_change_set.removed_tables);
         table_change_set.changes.extend(evm_change_set.changes);
+        println!("EVM Change set in native after appending {:?}", table_change_set);
 
         let aggregator_context: NativeAggregatorContext = extensions.remove();
         let aggregator_change_set = aggregator_context.into_change_set();
@@ -185,7 +186,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             configs,
         )
         .map_err(|status| PartialVMError::new(status.status_code()).finish(Location::Undefined))?;
-
+        //println!("vm change set:{:?}", change_set);
         Ok(change_set)
     }
 
@@ -435,7 +436,6 @@ impl<'r> WriteOpConverter<'r> {
     ) -> Result<WriteOp, VMStatus> {
         use MoveStorageOp::*;
         use WriteOp::*;
-
         let existing_value_opt = self.remote.get_state_value(state_key).map_err(|_| {
             VMStatus::error(
                 StatusCode::STORAGE_ERROR,
@@ -444,21 +444,35 @@ impl<'r> WriteOpConverter<'r> {
         })?;
 
         let write_op = match (existing_value_opt, move_storage_op) {
-            (None, Modify(_) | Delete) => {
+            (None, Delete) => {
+                println!("When converting write op: deleting non-existing value.");
                 return Err(VMStatus::error(
                     // Possible under speculative execution, returning storage error waiting for re-execution
                     StatusCode::STORAGE_ERROR,
-                    err_msg("When converting write op: updating non-existent value."),
+                    err_msg("When converting write op: deleting existing value."),
                 ));
             },
-            (Some(_), New(_)) => {
-                return Err(VMStatus::error(
-                    // Possible under speculative execution, returning storage error waiting for re-execution
-                    StatusCode::STORAGE_ERROR,
-                    err_msg("When converting write op: Recreating existing value."),
-                ));
+            (_, Modify(data)) => match &self.new_slot_metadata {
+                None => {
+                    if legacy_creation_as_modification {
+                        Modification(data)
+                    } else {
+                        Creation(data)
+                    }
+                },
+                Some(metadata) => ModificationWithMetadata {
+                    data,
+                    metadata: metadata.clone(),
+                },
             },
-            (None, New(data)) => match &self.new_slot_metadata {
+            // (Some(_), New(_)) => {
+            //     return Err(VMStatus::error(
+            //         // Possible under speculative execution, returning storage error waiting for re-execution
+            //         StatusCode::STORAGE_ERROR,
+            //         err_msg("When converting write op: Recreating existing value."),
+            //     ));
+            // },
+            (_, New(data)) => match &self.new_slot_metadata {
                 None => {
                     if legacy_creation_as_modification {
                         Modification(data)

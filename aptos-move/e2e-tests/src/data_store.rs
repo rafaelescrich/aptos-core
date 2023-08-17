@@ -71,6 +71,7 @@ impl FakeDataStore {
     ///
     /// Returns the previous data if the key was occupied.
     pub fn set_legacy(&mut self, state_key: StateKey, bytes: Vec<u8>) -> Option<StateValue> {
+        println!("legacy state key:{:?}, value:{:?}", state_key, bytes);
         self.state_data
             .insert(state_key, StateValue::new_legacy(bytes))
     }
@@ -79,6 +80,7 @@ impl FakeDataStore {
     ///
     /// Returns the previous data if the key was occupied.
     pub fn set(&mut self, state_key: StateKey, state_value: StateValue) -> Option<StateValue> {
+        println!("normal state key:{:?}, value:{:?}", state_key, state_value);
         self.state_data.insert(state_key, state_value)
     }
 
