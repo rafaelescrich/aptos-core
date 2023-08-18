@@ -72,7 +72,7 @@ fn native_create_impl2(
     evm_context.table_change_set.borrow_mut().new_tables.append(&mut change_set.new_tables);
     evm_context.table_change_set.borrow_mut().removed_tables.append(&mut change_set.removed_tables);
     evm_context.table_change_set.borrow_mut().changes.append(&mut change_set.changes);
-    println!("exit reason:{:?}, output:{:?}, change_set:{:?}", exit_reason, output, change_set);
+    //println!("exit reason:{:?}, output:{:?}, change_set:{:?}", exit_reason, output, change_set);
 
     match exit_reason {
         ExitReason::Succeed(_) => {

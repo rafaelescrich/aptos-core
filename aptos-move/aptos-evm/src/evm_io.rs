@@ -65,7 +65,6 @@ impl<'a> IO<'a> {
                 bcs::to_bytes(&storage_key).unwrap().as_slice(),
             )
             .unwrap();
-        println!("storage bytes:{:?}", bytes);
         bytes.map(|bytes| {
             let bytes = read_bytes_from_move_bytes(&bytes);
             read_h256_from_bytes(&bytes)
