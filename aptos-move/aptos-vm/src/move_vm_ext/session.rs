@@ -159,7 +159,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
 
         let evm_context: NativeEvmContext = extensions.remove();
         let evm_change_set = evm_context.into_change_set();
-        println!("EVM Change set in session.finish {:?}", evm_change_set);
+        //println!("EVM Change set in session.finish {:?}", evm_change_set);
         let table_context: NativeTableContext = extensions.remove();
         let mut table_change_set = table_context
             .into_change_set()
@@ -168,7 +168,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         table_change_set.new_tables.extend(evm_change_set.new_tables);
         table_change_set.removed_tables.extend(evm_change_set.removed_tables);
         table_change_set.changes.extend(evm_change_set.changes);
-        println!("EVM Change set in native after appending {:?}", table_change_set);
+        //println!("EVM Change set in native after appending {:?}", table_change_set);
 
         let aggregator_context: NativeAggregatorContext = extensions.remove();
         let aggregator_change_set = aggregator_context.into_change_set();
@@ -445,7 +445,7 @@ impl<'r> WriteOpConverter<'r> {
 
         let write_op = match (existing_value_opt, move_storage_op) {
             (None, Delete) => {
-                println!("When converting write op: deleting non-existing value.");
+                //println!("When converting write op: deleting non-existing value.");
                 return Err(VMStatus::error(
                     // Possible under speculative execution, returning storage error waiting for re-execution
                     StatusCode::STORAGE_ERROR,

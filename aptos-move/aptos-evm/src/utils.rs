@@ -39,9 +39,10 @@ pub fn read_h256_from_bytes(bytes: &[u8]) -> H256 {
     if bytes.len() != 32 {
         panic!("InvalidU256 length expected 32, got {}", bytes.len());
     }
-    let mut buf = [0u8; 32];
-    buf.copy_from_slice(&bytes);
-    H256(buf)
+    H256::from_slice(bytes)
+    // let mut buf = [0u8; 32];
+    // buf.copy_from_slice(&bytes);
+    // H256(buf)
 }
 
 #[cfg(test)]

@@ -67,7 +67,7 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for AptosExecutorTask<'a, S> {
             .vm
             .execute_single_transaction(txn, &self.vm.as_move_resolver(view), &log_context);
         if let PreprocessedTransaction::UserTransaction(_) = txn {
-            println!("execution result:{:?}", result);
+            //println!("execution result:{:?}", result);
         }
         match result
         {

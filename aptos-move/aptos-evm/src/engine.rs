@@ -134,8 +134,9 @@ impl<'a> Engine<'a> {
     }
 
     fn modify_storage(address: &EthAddress, index: &H256, value: &H256) -> (Vec<u8>, Op<Vec<u8>>) {
+        let move_bytes =  bcs::to_bytes(&value.as_bytes().to_vec()).unwrap();
         let storage_key = StorageKey::new(address.as_bytes().to_vec(), index.as_bytes().to_vec());
-        (bcs::to_bytes(&storage_key).unwrap(), Op::Modify(value.as_bytes().to_vec()))
+        (bcs::to_bytes(&storage_key).unwrap(), Op::Modify(move_bytes))
     }
 
     fn add_nonce(address: &EthAddress, nonce: &U256) -> (Vec<u8>, Op<Vec<u8>>) {
