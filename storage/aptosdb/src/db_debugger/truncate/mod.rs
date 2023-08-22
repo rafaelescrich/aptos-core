@@ -228,7 +228,7 @@ mod test {
             let mut in_memory_state = db.state_store.buffered_state().lock().current_state().clone();
             let _ancestor = in_memory_state.base.clone();
             let mut version = 0;
-            for (txns_to_commit, ledger_info_with_sigs) in input.iter() {
+            for (txns_to_commit, ledger_info_with_sigs) in input.0.iter() {
                 update_in_memory_state(&mut in_memory_state, txns_to_commit.as_slice());
                 db.save_transactions(txns_to_commit, version, version.checked_sub(1), Some(ledger_info_with_sigs), true, in_memory_state.clone())
                     .unwrap();
@@ -242,8 +242,8 @@ mod test {
 
             let target_version = db_version - 70;
             let sharding_config = ShardingConfig {
-                split_ledger_db: false,
-                use_sharded_state_merkle_db: false,
+                split_ledger_db: input.1,
+                use_sharded_state_merkle_db: input.1,
             };
 
             let cmd = Cmd {

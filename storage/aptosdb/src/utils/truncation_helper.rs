@@ -293,11 +293,17 @@ fn truncate_ledger_db_single_batch(
         &batch.transaction_accumulator_db_batches,
     )?;
 
-    batch.ledger_metadata_db_batches.put::<DbMetadataSchema>(
-        &DbMetadataKey::LedgerCommitProgress,
+    ledger_db.write_schemas(batch)?;
+
+    // Always update the overall commit progress in the end since the commit is no atomic across dbs
+    // Only commit the overall progress after all the other writes are committed.
+    let progress_batch = SchemaBatch::new();
+
+    progress_batch.put::<DbMetadataSchema>(
+        &DbMetadataKey::OverallCommitProgress,
         &DbMetadataValue::Version(start_version - 1),
     )?;
-    ledger_db.write_schemas(batch)
+    ledger_db.metadata_db().write_schemas(progress_batch)
 }
 
 fn delete_transaction_index_data(
