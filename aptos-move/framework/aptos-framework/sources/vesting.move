@@ -760,6 +760,19 @@ module aptos_framework::vesting {
         update_operator(admin, contract_address, new_operator, commission_percentage);
     }
 
+    public entry fun update_commission_percentage(
+        admin: &signer,
+        contract_address: address,
+        new_commission_percentage: u64,
+    ) acquires VestingContract {
+        let operator = operator(contract_address);
+        let vesting_contract = borrow_global_mut<VestingContract>(contract_address);
+        verify_admin(admin, vesting_contract);
+        let contract_signer = &get_vesting_account_signer_internal(vesting_contract);
+        staking_contract::update_commission_percentage(contract_signer, operator, new_commission_percentage);
+        vesting_contract.staking.commission_percentage = new_commission_percentage;
+    }
+
     public entry fun update_voter(
         admin: &signer,
         contract_address: address,
@@ -1458,6 +1471,26 @@ module aptos_framework::vesting {
 
         update_operator_with_same_commission(admin, contract_address, operator_address);
         assert!(operator_commission_percentage(contract_address) == 10, 0);
+    }
+
+    #[test(aptos_framework = @0x1, admin = @0x123, operator = @0x345)]
+    public entry fun test_update_commission_percentage(
+        aptos_framework: &signer,
+        admin: &signer,
+        operator: &signer,
+    ) acquires AdminStore, VestingContract {
+        let admin_address = signer::address_of(admin);
+        let operator_address = signer::address_of(operator);
+        setup(aptos_framework, &vector[admin_address, @11, operator_address]);
+        let contract_address = setup_vesting_contract(
+            admin, &vector[@11], &vector[GRANT_AMOUNT], admin_address, 10);
+
+        assert!(operator_commission_percentage(contract_address) == 10, 0);
+        let new_commission_percentage = 7;
+        update_operator_with_same_commission(admin, contract_address, operator_address);
+        update_commission_percentage(admin, contract_address, new_commission_percentage);
+        assert!(operator(contract_address) == operator_address, 0); // TODO: ?
+        assert!(operator_commission_percentage(contract_address) == new_commission_percentage, 0);
     }
 
     #[test(aptos_framework = @0x1, admin = @0x123, shareholder = @0x234)]

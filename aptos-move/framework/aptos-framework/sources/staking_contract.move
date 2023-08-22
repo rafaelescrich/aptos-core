@@ -372,9 +372,13 @@ module aptos_framework::staking_contract {
         emit_event(&mut store.reset_lockup_events, ResetLockupEvent { operator, pool_address });
     }
 
-    /// Convenience function to allow a staker to update the commission percentage paid to the operator.
-    /// TODO: fix the typo in function name. commision -> commission
+    #[deprecated]
     public entry fun update_commision(staker: &signer, operator: address, new_commission_percentage: u64) acquires Store, StakingGroupUpdateCommissionEvent {
+        update_commission_percentage(staker, operator, new_commission_percentage);
+    }
+
+    /// Allow staker to update the commission percentage paid to the operator.
+    public entry fun update_commission_percentage(staker: &signer, operator: address, new_commission_percentage: u64) acquires Store, StakingGroupUpdateCommissionEvent {
         assert!(
             new_commission_percentage >= 0 && new_commission_percentage <= 100,
             error::invalid_argument(EINVALID_COMMISSION_PERCENTAGE),
@@ -1257,7 +1261,7 @@ module aptos_framework::staking_contract {
         assert!(last_recorded_principal(staker_address, operator_address) == new_balance, 0);
     }
     #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
-    public entry fun test_update_commission(aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, StakingGroupUpdateCommissionEvent {
+    public entry fun test_update_commission_percentage(aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, StakingGroupUpdateCommissionEvent {
         let initial_balance = INITIAL_BALANCE * 2;
         setup_staking_contract(aptos_framework, staker, operator, initial_balance, 10);
         let staker_address = signer::address_of(staker);
@@ -1275,7 +1279,7 @@ module aptos_framework::staking_contract {
         let unpaid_commission = (balance_1epoch - initial_balance) / 10;
         stake::assert_stake_pool(pool_address, balance_1epoch, 0, 0, 0);
 
-        update_commision(staker, operator_address, 5);
+        update_commission_percentage(staker, operator_address, 5);
         stake::end_epoch();
         let balance_2epoch = with_rewards(balance_1epoch - unpaid_commission);
         stake::assert_stake_pool(pool_address, balance_2epoch, 0, 0, with_rewards(unpaid_commission));

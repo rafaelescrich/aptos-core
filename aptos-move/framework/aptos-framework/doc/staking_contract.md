@@ -59,6 +59,7 @@ pool.
 -  [Function `update_voter`](#0x1_staking_contract_update_voter)
 -  [Function `reset_lockup`](#0x1_staking_contract_reset_lockup)
 -  [Function `update_commision`](#0x1_staking_contract_update_commision)
+-  [Function `update_commission_percentage`](#0x1_staking_contract_update_commission_percentage)
 -  [Function `request_commission`](#0x1_staking_contract_request_commission)
 -  [Function `request_commission_internal`](#0x1_staking_contract_request_commission_internal)
 -  [Function `unlock_stake`](#0x1_staking_contract_unlock_stake)
@@ -1294,11 +1295,10 @@ Convenient function to allow the staker to reset their stake pool's lockup perio
 
 ## Function `update_commision`
 
-Convenience function to allow a staker to update the commission percentage paid to the operator.
-TODO: fix the typo in function name. commision -> commission
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commision">update_commision</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64)
+<pre><code>#[deprecated]
+<b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commision">update_commision</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64)
 </code></pre>
 
 
@@ -1308,6 +1308,31 @@ TODO: fix the typo in function name. commision -> commission
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commision">update_commision</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64) <b>acquires</b> <a href="staking_contract.md#0x1_staking_contract_Store">Store</a>, <a href="staking_contract.md#0x1_staking_contract_StakingGroupUpdateCommissionEvent">StakingGroupUpdateCommissionEvent</a> {
+    <a href="staking_contract.md#0x1_staking_contract_update_commission_percentage">update_commission_percentage</a>(staker, operator, new_commission_percentage);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_staking_contract_update_commission_percentage"></a>
+
+## Function `update_commission_percentage`
+
+Allow staker to update the commission percentage paid to the operator.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commission_percentage">update_commission_percentage</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commission_percentage">update_commission_percentage</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64) <b>acquires</b> <a href="staking_contract.md#0x1_staking_contract_Store">Store</a>, <a href="staking_contract.md#0x1_staking_contract_StakingGroupUpdateCommissionEvent">StakingGroupUpdateCommissionEvent</a> {
     <b>assert</b>!(
         new_commission_percentage &gt;= 0 && new_commission_percentage &lt;= 100,
         <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="staking_contract.md#0x1_staking_contract_EINVALID_COMMISSION_PERCENTAGE">EINVALID_COMMISSION_PERCENTAGE</a>),
@@ -2249,7 +2274,8 @@ Only active validator can update locked_until_secs.
 ### Function `update_commision`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commision">update_commision</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64)
+<pre><code>#[deprecated]
+<b>public</b> entry <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_update_commision">update_commision</a>(staker: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, new_commission_percentage: u64)
 </code></pre>
 
 
