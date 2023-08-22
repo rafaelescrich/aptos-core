@@ -416,23 +416,26 @@ pub fn read_line(input_name: &'static str) -> CliTypedResult<String> {
     Ok(input_buf)
 }
 
-/// Fund account (and possibly create it) from a faucet
+/// Fund account (and possibly create it) from a faucet. This returns txn hashes that
+/// you must wait for before the account is funded.
 pub async fn fund_account(
-    faucet_url: Url,
+    faucet_url: &Url,
+    faucet_auth_token: Option<&str>,
     num_octas: u64,
-    address: AccountAddress,
+    address: &AccountAddress,
 ) -> CliTypedResult<Vec<HashValue>> {
-    let response = reqwest::Client::new()
+    let mut builder = reqwest::Client::new()
         .post(format!(
             "{}mint?amount={}&auth_key={}",
             faucet_url, num_octas, address
         ))
-        .body("{}")
-        .send()
-        .await
-        .map_err(|err| {
-            CliError::ApiError(format!("Failed to fund account with faucet: {:#}", err))
-        })?;
+        .body("{}");
+    if let Some(ref faucet_auth_token) = faucet_auth_token {
+        builder = builder.header("Authorization", format!("Bearer {}", faucet_auth_token))
+    }
+    let response = builder.send().await.map_err(|err| {
+        CliError::ApiError(format!("Failed to fund account with faucet: {:#}", err))
+    })?;
     if response.status() == 200 {
         let hashes: Vec<HashValue> = response
             .json()
