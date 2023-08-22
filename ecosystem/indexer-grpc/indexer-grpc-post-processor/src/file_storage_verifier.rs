@@ -38,6 +38,9 @@ impl FileStorageVerifier {
             IndexerGrpcFileStoreConfig::LocalFileStore(local_file_store) => Box::new(
                 LocalFileStoreOperator::new(local_file_store.local_file_store_path.clone()),
             ),
+            IndexerGrpcFileStoreConfig::CdnFileStore(_cdn_file_store) => {
+                unimplemented!();
+            },
         };
         // Verify the existence of the storage bucket.
         file_store_operator.verify_storage_bucket_existence().await;

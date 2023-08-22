@@ -9,6 +9,8 @@ pub mod gcs;
 pub use gcs::*;
 pub mod local;
 pub use local::*;
+pub mod cdn;
+pub use cdn::*;
 
 pub const FILE_FOLDER_NAME: &str = "files";
 const METADATA_FILE_NAME: &str = "metadata.json";

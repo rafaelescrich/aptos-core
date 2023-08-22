@@ -18,10 +18,16 @@ pub struct LocalFileStore {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CdnFileStore {
+    pub url: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "file_store_type")]
 pub enum IndexerGrpcFileStoreConfig {
     GcsFileStore(GcsFileStore),
     LocalFileStore(LocalFileStore),
+    CdnFileStore(CdnFileStore),
 }
 
 impl Default for IndexerGrpcFileStoreConfig {

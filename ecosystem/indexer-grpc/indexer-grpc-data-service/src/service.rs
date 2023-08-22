@@ -14,7 +14,9 @@ use aptos_indexer_grpc_utils::{
     constants::{
         BLOB_STORAGE_SIZE, GRPC_AUTH_TOKEN_HEADER, GRPC_REQUEST_NAME_HEADER, MESSAGE_SIZE_LIMIT,
     },
-    file_store_operator::{FileStoreOperator, GcsFileStoreOperator, LocalFileStoreOperator},
+    file_store_operator::{
+        CdnFileStoreOperator, FileStoreOperator, GcsFileStoreOperator, LocalFileStoreOperator,
+    },
     time_diff_since_pb_timestamp_in_secs, EncodedTransactionWithVersion,
 };
 use aptos_moving_average::MovingAverage;
@@ -142,6 +144,9 @@ impl RawData for RawDataServerWrapper {
             IndexerGrpcFileStoreConfig::LocalFileStore(local_file_store) => Box::new(
                 LocalFileStoreOperator::new(local_file_store.local_file_store_path.clone()),
             ),
+            IndexerGrpcFileStoreConfig::CdnFileStore(cdn_file_store) => {
+                Box::new(CdnFileStoreOperator::new(cdn_file_store.url.clone()))
+            },
         };
 
         // Adds tracing context for the request.
