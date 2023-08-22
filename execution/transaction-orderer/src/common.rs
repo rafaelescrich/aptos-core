@@ -14,9 +14,9 @@ pub trait PTransaction {
     where
         Self: 'a;
 
-    fn read_set<'a>(&'a self) -> Self::ReadSetIter<'a>;
+    fn read_set(&self) -> Self::ReadSetIter<'_>;
 
-    fn write_set<'a>(&'a self) -> Self::WriteSetIter<'a>;
+    fn write_set(&self) -> Self::WriteSetIter<'_>;
 }
 
 impl PTransaction for AnalyzedTransaction {
@@ -26,13 +26,13 @@ impl PTransaction for AnalyzedTransaction {
     type WriteSetIter<'a> =
         std::iter::Map<std::slice::Iter<'a, StorageLocation>, fn(&StorageLocation) -> &StateKey>;
 
-    fn read_set<'a>(&'a self) -> Self::ReadSetIter<'a> {
+    fn read_set(&self) -> Self::ReadSetIter<'_> {
         self.read_hints()
             .into_iter()
             .map(StorageLocation::state_key)
     }
 
-    fn write_set<'a>(&'a self) -> Self::WriteSetIter<'a> {
+    fn write_set(&self) -> Self::WriteSetIter<'_> {
         self.write_hints()
             .into_iter()
             .map(StorageLocation::state_key)

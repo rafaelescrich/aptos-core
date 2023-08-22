@@ -21,11 +21,11 @@ impl<T> PTransaction for CompressedPTransaction<T> {
     type ReadSetIter<'a> = std::slice::Iter<'a, Self::Key> where T: 'a;
     type WriteSetIter<'a> = std::slice::Iter<'a, Self::Key> where T: 'a;
 
-    fn read_set<'a>(&'a self) -> Self::ReadSetIter<'a> {
+    fn read_set(&self) -> Self::ReadSetIter<'_> {
         self.read_set.iter()
     }
 
-    fn write_set<'a>(&'a self) -> Self::WriteSetIter<'a> {
+    fn write_set(&self) -> Self::WriteSetIter<'_> {
         self.write_set.iter()
     }
 }
